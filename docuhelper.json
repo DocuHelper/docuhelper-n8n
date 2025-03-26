@@ -1,0 +1,277 @@
+{
+  "name": "docuhelper",
+  "nodes": [
+    {
+      "parameters": {
+        "endpoint": "http://192.168.0.77:8080/graphql",
+        "query": "=query FindChunkByEmbedValue {\n    findChunkByEmbedValue(\n        document: \"{{ $json.document }}\"\n        embed: [{{ $json.embedding }}]\n    ) {\n        content\n        page\n    }\n}\n"
+      },
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1.1,
+      "position": [
+        360,
+        100
+      ],
+      "id": "8da09e05-478a-4764-b55b-daf663911851",
+      "name": "GraphQL"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -580,
+        120
+      ],
+      "id": "83c44783-f57d-48c2-80d6-78ac88148851",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.168.0.8:11434/api/embeddings",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "bge-m3"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.ask }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -100,
+        20
+      ],
+      "id": "223721de-7aa0-42c7-ba3e-2066ce6121c3",
+      "name": "유저 질의 임베딩1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "430bf86c-e6ec-49c9-97e8-46d8ab349d1e",
+              "name": "ask",
+              "value": "지원자의 생활신조를 알려줘",
+              "type": "string"
+            },
+            {
+              "id": "660e4a26-4a02-4b04-9515-1c9b68d979d4",
+              "name": "document",
+              "value": "0d9185d0-21be-4ced-ac26-7be6efbfb9a5",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -360,
+        120
+      ],
+      "id": "40eb9285-38f2-4477-82d8-372968b01938",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        120,
+        100
+      ],
+      "id": "c471220e-3b5d-4837-9a5d-3b760df13797",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        560,
+        300
+      ],
+      "id": "99de3daa-e66a-4a52-8838-1c0ee394b522",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=너는 내가 보내준 자료를 통해 내가 원하는 정보를 찾아주는 비서야\n{{ $json.ask }}\n\n자료: \n{{ $('GraphQL').item.json.data.findChunkByEmbedValue[0].content }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1000,
+        300
+      ],
+      "id": "35377ca1-b212-40e7-b5ef-6198e95c701c",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "deepseek-r1:14b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        520
+      ],
+      "id": "b887d9a0-469e-4563-a5a0-213b9d655a3a",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "f73QCGZEk5DkHLCa",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\nvar result = $input.item.json.text\nvar splitData = result.split(\">\")\nvar res =  splitData[splitData.length-1]\n\n$input.item.json.text = res\n\nreturn $input.item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        300
+      ],
+      "id": "d2961190-543b-4c34-a8c8-618544bd8197",
+      "name": "Code"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "유저 질의 임베딩1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "유저 질의 임베딩1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "GraphQL": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "GraphQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d57890d0-dde8-4363-9570-dbceb091f483",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "780a141848e9b294ba94e1aaf30fae5d9fb4b11c8a6900e6cb90f3e396ddcb6f"
+  },
+  "id": "3dXgiti2UB0uJrq1",
+  "tags": []
+}
