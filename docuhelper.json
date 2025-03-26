@@ -2,29 +2,16 @@
   "name": "docuhelper",
   "nodes": [
     {
-      "parameters": {
-        "endpoint": "http://192.168.0.77:8080/graphql",
-        "query": "=query FindChunkByEmbedValue {\n    findChunkByEmbedValue(\n        document: \"{{ $json.document }}\"\n        embed: [{{ $json.embedding }}]\n    ) {\n        content\n        page\n    }\n}\n"
-      },
-      "type": "n8n-nodes-base.graphql",
-      "typeVersion": 1.1,
-      "position": [
-        360,
-        100
-      ],
-      "id": "8da09e05-478a-4764-b55b-daf663911851",
-      "name": "GraphQL"
-    },
-    {
       "parameters": {},
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        -580,
-        120
+        -1020,
+        20
       ],
       "id": "83c44783-f57d-48c2-80d6-78ac88148851",
-      "name": "When clicking ‘Test workflow’"
+      "name": "When clicking ‘Test workflow’",
+      "disabled": true
     },
     {
       "parameters": {
@@ -48,8 +35,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -100,
-        20
+        0,
+        -180
       ],
       "id": "223721de-7aa0-42c7-ba3e-2066ce6121c3",
       "name": "유저 질의 임베딩1"
@@ -77,8 +64,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -360,
-        120
+        -720,
+        20
       ],
       "id": "40eb9285-38f2-4477-82d8-372968b01938",
       "name": "Edit Fields"
@@ -92,8 +79,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        120,
-        100
+        340,
+        -160
       ],
       "id": "c471220e-3b5d-4837-9a5d-3b760df13797",
       "name": "Merge"
@@ -107,59 +94,295 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        560,
-        300
+        1260,
+        0
       ],
       "id": "99de3daa-e66a-4a52-8838-1c0ee394b522",
       "name": "Merge1"
     },
     {
       "parameters": {
-        "promptType": "define",
-        "text": "=너는 내가 보내준 자료를 통해 내가 원하는 정보를 찾아주는 비서야\n{{ $json.ask }}\n\n자료: \n{{ $('GraphQL').item.json.data.findChunkByEmbedValue[0].content }}"
+        "endpoint": "http://192.168.0.77:8080/graphql",
+        "query": "=query FindChunkByEmbedValue {\n    findChunkByEmbedValue(\n        document: \"{{ $json.document }}\"\n        embed: [{{ $json.embedding }}]\n    ) {\n        content\n        page\n    }\n}\n"
       },
-      "type": "@n8n/n8n-nodes-langchain.chainLlm",
-      "typeVersion": 1.5,
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1.1,
       "position": [
-        1000,
-        300
+        620,
+        -160
       ],
-      "id": "35377ca1-b212-40e7-b5ef-6198e95c701c",
-      "name": "Basic LLM Chain"
+      "id": "8da09e05-478a-4764-b55b-daf663911851",
+      "name": "Chunk 도메인 조회"
     },
     {
       "parameters": {
-        "model": "deepseek-r1:14b",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini-2024-07-18",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI-2024-07-18"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=너는 내가 보내준 자료를 통해 내가 원하는 정보를 찾아주는 비서야\n{{ $json.ask }}\n\n자료: \n{{ $('Chunk 도메인 조회').item.json.data.findChunkByEmbedValue[0].content }}"
+            }
+          ]
+        },
         "options": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
-      "typeVersion": 1,
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
       "position": [
-        1020,
-        520
+        1480,
+        120
       ],
-      "id": "b887d9a0-469e-4563-a5a0-213b9d655a3a",
-      "name": "Ollama Chat Model",
+      "id": "b38f0651-ccd0-4046-a6f8-fa1e7fc39e78",
+      "name": "OpenAI",
       "credentials": {
-        "ollamaApi": {
-          "id": "f73QCGZEk5DkHLCa",
-          "name": "Ollama account"
+        "openAiApi": {
+          "id": "fovZ58yd8nr6Xvzh",
+          "name": "docuhelper"
         }
       }
     },
     {
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\nvar result = $input.item.json.text\nvar splitData = result.split(\">\")\nvar res =  splitData[splitData.length-1]\n\n$input.item.json.text = res\n\nreturn $input.item;"
+        "topic": "docuhelper-api",
+        "groupId": "n8n-kafka",
+        "options": {
+          "jsonParseMessage": true,
+          "returnHeaders": true
+        }
+      },
+      "type": "n8n-nodes-base.kafkaTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1160,
+        220
+      ],
+      "id": "4a0527b3-5518-4467-9d2f-c30255ad303d",
+      "name": "Kafka Trigger",
+      "credentials": {
+        "kafka": {
+          "id": "vL3QF8PEJ0sslYE2",
+          "name": "portfolio-kafka"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 0
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -360,
+        20
+      ],
+      "id": "ea3247e6-6a93-4084-9b40-5a0d73234c12",
+      "name": "Wait",
+      "webhookId": "a2c76a2b-265c-471f-af79-35caf7da3703"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "430bf86c-e6ec-49c9-97e8-46d8ab349d1e",
+              "name": "ask",
+              "value": "={{ $json.message.chat.userAsk }}",
+              "type": "string"
+            },
+            {
+              "id": "660e4a26-4a02-4b04-9515-1c9b68d979d4",
+              "name": "document",
+              "value": "={{ $json.message.chat.document }}",
+              "type": "string"
+            },
+            {
+              "id": "102ca65b-ab9d-46f6-9991-e180fad7e43e",
+              "name": "chat",
+              "value": "={{ $json.message.chat.uuid }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -720,
+        220
+      ],
+      "id": "b177f5ca-ff64-46ea-90bb-b4d53b605324",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "topic": "docuhelper-n8n",
+        "sendInputData": "=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.kafkaTool",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        320
+      ],
+      "id": "f69bdd5d-1b5d-4a70-b4e8-e386a1efdbd2",
+      "name": "Kafka",
+      "credentials": {
+        "kafka": {
+          "id": "vL3QF8PEJ0sslYE2",
+          "name": "portfolio-kafka"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1840,
+        20
+      ],
+      "id": "66464a70-73a1-4029-9480-e4f9bc504a0b",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "topic": "docuhelper-n8n",
+        "useKey": true,
+        "key": "={\n\t\"eventType\": \"ChatAnswer\",\n\t\"eventPublishDt\": [\n      {{$now.format('yyyy')}},\n      {{$now.format('M')}},\n      {{$now.format('d')}},\n      {{$now.format('H')}},\n      {{$now.format('M')}},\n      {{$now.format('s')}},\n      1\n    ]\n}",
+        "headersUi": {
+          "headerValues": [
+            {
+              "key": "eventType",
+              "value": "ChatAnswer"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.kafka",
+      "typeVersion": 1,
+      "position": [
+        2480,
+        20
+      ],
+      "id": "48a55fb1-1006-4a95-b9c3-77d233226aed",
+      "name": "Kafka1",
+      "credentials": {
+        "kafka": {
+          "id": "vL3QF8PEJ0sslYE2",
+          "name": "portfolio-kafka"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -160
+      ],
+      "id": "8ecd8ec6-d94c-498a-8ec5-03e816c687cf",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\n\nreturn $input.item.json.data.findChunkByEmbedValue;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1360,
-        300
+        860,
+        -160
       ],
-      "id": "d2961190-543b-4c34-a8c8-618544bd8197",
+      "id": "136d0c80-b112-407e-aef3-d6a89f89c0b6",
       "name": "Code"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "00f6ebcd-384d-4083-a2c2-25ee60965627",
+              "name": "ask",
+              "value": "={{ $json.ask }}",
+              "type": "string"
+            },
+            {
+              "id": "f20f4214-069b-4ca8-b39f-de46635b405f",
+              "name": "answer",
+              "value": "={{ $json.message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "930c63ac-2aec-4adb-8e6f-e5f449eb7256",
+              "name": "document",
+              "value": "={{ $json.document }}",
+              "type": "string"
+            },
+            {
+              "id": "26e1c1fe-99c3-43dd-ae53-c4b8722cd061",
+              "name": "chat",
+              "value": "={{ $json.chat }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2140,
+        20
+      ],
+      "id": "8df09559-4d1a-4799-83a1-73edf7384c7f",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8e5b1aca-2bf0-4bad-a4af-d26f8e457d16",
+              "leftValue": "={{ $json.headers.eventType }}",
+              "rightValue": "ChatSend",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -940,
+        220
+      ],
+      "id": "acb0a364-dec3-46be-ab79-e72810908a61",
+      "name": "Filter"
     }
   ],
   "pinData": {},
@@ -190,28 +413,7 @@
       "main": [
         [
           {
-            "node": "유저 질의 임베딩1",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          },
-          {
-            "node": "Merge1",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "GraphQL": {
-      "main": [
-        [
-          {
-            "node": "Merge1",
+            "node": "Wait",
             "type": "main",
             "index": 0
           }
@@ -222,19 +424,8 @@
       "main": [
         [
           {
-            "node": "GraphQL",
+            "node": "Chunk 도메인 조회",
             "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ollama Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Basic LLM Chain",
-            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -244,14 +435,19 @@
       "main": [
         [
           {
-            "node": "Basic LLM Chain",
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Basic LLM Chain": {
+    "Chunk 도메인 조회": {
       "main": [
         [
           {
@@ -261,13 +457,127 @@
           }
         ]
       ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Kafka Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "유저 질의 임베딩1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kafka1": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Kafka1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "d57890d0-dde8-4363-9570-dbceb091f483",
+  "versionId": "3f0212d9-6147-49ed-abc9-57a635ffcb8c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "780a141848e9b294ba94e1aaf30fae5d9fb4b11c8a6900e6cb90f3e396ddcb6f"
