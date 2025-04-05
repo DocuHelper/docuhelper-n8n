@@ -88,13 +88,13 @@
     {
       "parameters": {
         "mode": "combine",
-        "combineBy": "combineAll",
+        "combineBy": "combineByPosition",
         "options": {}
       },
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        1260,
+        1820,
         0
       ],
       "id": "99de3daa-e66a-4a52-8838-1c0ee394b522",
@@ -103,7 +103,7 @@
     {
       "parameters": {
         "endpoint": "http://192.168.0.77:8080/graphql",
-        "query": "=query FindChunkByEmbedValue {\n    findChunkByEmbedValue(\n        document: \"{{ $json.document }}\"\n        embed: [{{ $json.embedding }}]\n    ) {\n        content\n        page\n    }\n}\n"
+        "query": "=query FindChunkByEmbedValue {\n    findChunkByEmbedValue(\n        document: \"{{ $json.document }}\"\n        embed: [{{ $json.embedding }}]\n    ) {\n        chunk {\n          uuid\n          content\n          page\n          num\n        }\n      similarity\n    }\n}\n"
       },
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1.1,
@@ -125,7 +125,7 @@
         "messages": {
           "values": [
             {
-              "content": "=너는 내가 보내준 자료를 통해 내가 원하는 정보를 찾아주는 비서야\n{{ $json.ask }}\n\n자료: \n{{ $('Chunk 도메인 조회').item.json.data.findChunkByEmbedValue[0].content }}"
+              "content": "=너는 내가 보내준 자료를 기반으로 내가 원하는 정보를 찾아주는 비서야\n질문: \n{{ $json.ask }}\n\n자료: \n{{ $json.resultRef.map(item => item.chunk.content) }}"
             }
           ]
         },
@@ -134,8 +134,8 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        1480,
-        120
+        2480,
+        340
       ],
       "id": "b38f0651-ccd0-4046-a6f8-fa1e7fc39e78",
       "name": "OpenAI",
@@ -249,8 +249,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.1,
       "position": [
-        1840,
-        20
+        3640,
+        240
       ],
       "id": "66464a70-73a1-4029-9480-e4f9bc504a0b",
       "name": "Merge2"
@@ -273,8 +273,8 @@
       "type": "n8n-nodes-base.kafka",
       "typeVersion": 1,
       "position": [
-        2480,
-        20
+        4360,
+        240
       ],
       "id": "48a55fb1-1006-4a95-b9c3-77d233226aed",
       "name": "Kafka1",
@@ -286,7 +286,9 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "maxItems": 2
+      },
       "type": "n8n-nodes-base.limit",
       "typeVersion": 1,
       "position": [
@@ -295,19 +297,6 @@
       ],
       "id": "8ecd8ec6-d94c-498a-8ec5-03e816c687cf",
       "name": "Limit"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\n\nreturn $input.item.json.data.findChunkByEmbedValue;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        860,
-        -160
-      ],
-      "id": "136d0c80-b112-407e-aef3-d6a89f89c0b6",
-      "name": "Code"
     },
     {
       "parameters": {
@@ -322,7 +311,7 @@
             {
               "id": "f20f4214-069b-4ca8-b39f-de46635b405f",
               "name": "answer",
-              "value": "={{ $json.message.content }}",
+              "value": "={{ $json.result }}",
               "type": "string"
             },
             {
@@ -336,6 +325,12 @@
               "name": "chat",
               "value": "={{ $json.chat }}",
               "type": "string"
+            },
+            {
+              "id": "49fa00a4-8017-4c3e-8119-f13e074e9c68",
+              "name": "answerRef",
+              "value": "={{ $json.resultRef }}",
+              "type": "array"
             }
           ]
         },
@@ -344,8 +339,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2140,
-        20
+        4020,
+        240
       ],
       "id": "8df09559-4d1a-4799-83a1-73edf7384c7f",
       "name": "Edit Fields2"
@@ -383,6 +378,120 @@
       ],
       "id": "acb0a364-dec3-46be-ab79-e72810908a61",
       "name": "Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\n\nreturn $input.item.json.data.findChunkByEmbedValue;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        -160
+      ],
+      "id": "c20035d1-3720-4469-92a5-06910243a131",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "resultRef",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        -160
+      ],
+      "id": "edf75244-cc59-4963-80f8-d7192e0b02c0",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "=message.content",
+              "renameField": true,
+              "outputFieldName": "result"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2840,
+        340
+      ],
+      "id": "452e87d5-6253-4180-9966-69f29a7d93d6",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1da470f-9924-49bf-865d-5b844ca3395b",
+              "name": "result",
+              "value": "={{ $json.result[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3060,
+        340
+      ],
+      "id": "8f347cba-6fca-4f93-9a05-49ed56ba93cd",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "567b0146-b2f0-45cf-961b-5f1d1019e1eb",
+              "name": "resultRef",
+              "value": "={{ $json.resultRef.map(item => {\n\nreturn {\n  chat: $json.chat,\n  chunk: item.chunk.uuid,\n  similarity: item.similarity\n}\n}) }}",
+              "type": "array"
+            },
+            {
+              "id": "ae2e85a0-b963-4615-a172-6a33492fad00",
+              "name": "ask",
+              "value": "={{ $json.ask }}",
+              "type": "string"
+            },
+            {
+              "id": "6a45da9a-6e2e-41e8-8863-cbfa21936449",
+              "name": "document",
+              "value": "={{ $json.document }}",
+              "type": "string"
+            },
+            {
+              "id": "1bcf8c44-1c35-4781-90ee-8c8190b9b54b",
+              "name": "chat",
+              "value": "={{ $json.chat }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2460,
+        0
+      ],
+      "id": "c5e227f9-8147-454e-abfe-7bc3b062c4b5",
+      "name": "Edit Fields4"
     }
   ],
   "pinData": {},
@@ -440,7 +549,7 @@
             "index": 0
           },
           {
-            "node": "Merge2",
+            "node": "Edit Fields4",
             "type": "main",
             "index": 0
           }
@@ -462,9 +571,9 @@
       "main": [
         [
           {
-            "node": "Merge2",
+            "node": "Aggregate1",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -527,18 +636,7 @@
       "main": [
         [
           {
-            "node": "Merge1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code": {
-      "main": [
-        [
-          {
-            "node": "Limit",
+            "node": "Aggregate",
             "type": "main",
             "index": 0
           }
@@ -571,13 +669,68 @@
           }
         ]
       ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "3f0212d9-6147-49ed-abc9-57a635ffcb8c",
+  "versionId": "8568fdc0-7ec1-4081-8dd6-54520767f4a6",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "780a141848e9b294ba94e1aaf30fae5d9fb4b11c8a6900e6cb90f3e396ddcb6f"
